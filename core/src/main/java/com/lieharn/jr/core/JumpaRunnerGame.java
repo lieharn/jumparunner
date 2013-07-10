@@ -1,7 +1,7 @@
 package com.lieharn.jr.core;
 
 import java.util.ArrayList;
-import org.jbox2d.collision.shapes.CircleShape;
+import org.jbox2d.collision.shapes.*;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
@@ -79,6 +79,8 @@ public class JumpaRunnerGame extends Game.Default {
         bgLayer = graphics().createImageLayer(bgImage);
         graphics().rootLayer().add(bgLayer);
 
+
+
         cloudImage = assets().getImage("images/cloud.png");
         cloudLayer = graphics().createImageLayer(cloudImage);
         graphics().rootLayer().add(cloudLayer);
@@ -104,6 +106,13 @@ public class JumpaRunnerGame extends Game.Default {
         world = new World(gravity);
         world.setWarmStarting(true);
         world.setAutoClearForces(true);
+
+        float pWidth = physUnitPerScreenUnit * bgImage.width();
+        float pHeight = physUnitPerScreenUnit * bgImage.height();
+        Body ground = world.createBody(new BodyDef());
+        EdgeShape groundShape = new EdgeShape();
+        groundShape.set(new Vec2(0, pHeight), new Vec2(pWidth, pHeight));
+        ground.createFixture(groundShape, 0.0f);
     }
 
     @Override
