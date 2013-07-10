@@ -91,8 +91,7 @@ public class JumpaRunnerGame extends Game.Default {
         pointer().setListener(new Pointer.Adapter() {
             @Override
             public void onPointerEnd(Pointer.Event event) {
-                Ball ball = new Ball(ballImage, physUnitPerScreenUnit * event.x(),
-                    physUnitPerScreenUnit * event.y());
+                Ball ball = new Ball(ballImage, physUnitPerScreenUnit * event.x(), physUnitPerScreenUnit * event.y());
                 balls.add(ball);
                 ballLayer.add(ball.layer);
             }
