@@ -14,6 +14,8 @@ import playn.core.Game;
 import playn.core.GroupLayer;
 import playn.core.Image;
 import playn.core.ImageLayer;
+import playn.core.Key;
+import playn.core.Keyboard;
 import static playn.core.PlayN.*;
 import playn.core.Pointer;
 
@@ -27,10 +29,49 @@ public class JumpaRunnerGame extends Game.Default {
     float y;
     Image ballImage;
     GroupLayer ballLayer;
+    GroupLayer levelLayer;
     World world;
+    Image blockImage;
+    ImageLayer blockLayer;
+    float curserX = 320.0f;
+    float curserY = 240.0f;
+    float curserJumpStartY;
+    float curserJumpGoalY;
+    boolean curserJumpGoalYReached = false;
 
     public JumpaRunnerGame() {
-        super(25); // call update every 33ms (30 times per second)
+        super(25);
+    }
+
+    private void updateCurser() {
+        if (curserUp) {
+            if (curserY >= curserJumpGoalY && !curserJumpGoalYReached) {
+                curserY -= curserTranslation * 3;
+                blockLayer.setTranslation(curserX, curserY);
+                if (curserJumpGoalY >= curserY) {
+                    curserJumpGoalYReached = true;
+                }
+            }
+        }
+        if (curserJumpGoalYReached) {
+            curserY += curserTranslation * 2;
+            blockLayer.setTranslation(curserX, curserY);
+            if (curserJumpStartY <= curserY) {
+                curserJumpGoalYReached = false;
+            }
+        }
+        if (curserDown) {
+            curserY += curserTranslation;
+            blockLayer.setTranslation(curserX, curserY);
+        }
+        if (curserRight) {
+            curserX += curserTranslation;
+            blockLayer.setTranslation(curserX, curserY);
+        }
+        if (curserLeft) {
+            curserX -= curserTranslation;
+            blockLayer.setTranslation(curserX, curserY);
+        }
     }
 
     class Ball {
@@ -67,19 +108,23 @@ public class JumpaRunnerGame extends Game.Default {
     }
     ArrayList<Ball> balls = new ArrayList<Ball>();
     float physUnitPerScreenUnit = 1 / 26.666667f;
-    int width = 640;
-    int height = 480;
+    int width = 800;
+    int height = 600;
+    Canvas canvas;
+    boolean curserUp = false;
+    boolean curserRight = false;
+    boolean curserLeft = false;
+    boolean curserDown = false;
+    float curserTranslation = 3.5f;
 
     @Override
     public void init() {
         bgImage = graphics().createImage(width, height);
-        Canvas canvas = bgImage.canvas();
+        canvas = bgImage.canvas();
         canvas.setFillColor(0xff87ceeb);
         canvas.fillRect(0, 0, width, height);
         bgLayer = graphics().createImageLayer(bgImage);
         graphics().rootLayer().add(bgLayer);
-
-
 
         cloudImage = assets().getImage("images/cloud.png");
         cloudLayer = graphics().createImageLayer(cloudImage);
@@ -90,6 +135,13 @@ public class JumpaRunnerGame extends Game.Default {
         ballLayer = graphics().createGroupLayer();
         ballLayer.setScale(1f / physUnitPerScreenUnit);
         graphics().rootLayer().add(ballLayer);
+
+        blockImage = assets().getImage("images/block.png");
+        blockLayer = graphics().createImageLayer(blockImage);
+        blockLayer.setTranslation(curserX, curserY);
+        graphics().rootLayer().add(blockLayer);
+
+
         pointer().setListener(new Pointer.Adapter() {
             @Override
             public void onPointerEnd(Pointer.Event event) {
@@ -98,6 +150,46 @@ public class JumpaRunnerGame extends Game.Default {
                 ballLayer.add(ball.layer);
             }
         });
+
+
+        keyboard().setListener(new Keyboard.Adapter() {
+            @Override
+            public void onKeyDown(Keyboard.Event event) {
+                if (event.key() == Key.UP) {
+                    curserJumpStartY = curserY;
+                    curserJumpGoalY = curserJumpStartY - 150.0f;
+                    curserUp = true;
+                }
+                if (event.key() == Key.DOWN) {
+                    curserDown = true;
+                }
+                if (event.key() == Key.RIGHT) {
+                    curserRight = true;
+                }
+                if (event.key() == Key.LEFT) {
+                    curserLeft = true;
+                }
+            }
+
+            @Override
+            public void onKeyUp(Keyboard.Event event) {
+                if (event.key() == Key.UP) {
+                    curserUp = false;
+                    curserJumpGoalYReached = true;
+                }
+                if (event.key() == Key.DOWN) {
+                    curserDown = false;
+                }
+                if (event.key() == Key.RIGHT) {
+                    curserRight = false;
+                }
+                if (event.key() == Key.LEFT) {
+                    curserLeft = false;
+                }
+            }
+        });
+
+
         initPhysics();
     }
 
@@ -107,31 +199,35 @@ public class JumpaRunnerGame extends Game.Default {
         world.setWarmStarting(true);
         world.setAutoClearForces(true);
 
+
         float pWidth = physUnitPerScreenUnit * bgImage.width();
         float pHeight = physUnitPerScreenUnit * bgImage.height();
         Body ground = world.createBody(new BodyDef());
-        EdgeShape groundShape = new EdgeShape();
-        groundShape.set(new Vec2(0, pHeight), new Vec2(pWidth, pHeight));
-        ground.createFixture(groundShape, 0.0f);
-    }
 
-    @Override
-    public void update(int delta) {
-        // the background automatically paints itself, so no need to do anything here!
-        world.step(0.033f, 10, 10);
+        EdgeShape bottom = new EdgeShape();
+        bottom.set(new Vec2(0, pHeight), new Vec2(pWidth, pHeight));
+        ground.createFixture(bottom, 0.0f);
+
     }
 
     @Override
     public void paint(float delta) {
-
         x += delta;
         if (x > bgImage.width() + cloudImage.width()) {
             x = -cloudImage.width();
         }
         cloudLayer.setTranslation(x, y);
-
         for (Ball ball : balls) {
             ball.paint(delta);
         }
+    }
+
+    @Override
+    public void update(int delta) {
+        world.step(0.033f, 10, 10);
+
+        updateCurser();
+
+
     }
 }
